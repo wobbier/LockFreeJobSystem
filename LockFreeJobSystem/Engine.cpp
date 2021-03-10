@@ -5,7 +5,7 @@
 Engine::Engine(std::size_t InNumThreads, std::size_t InJobsPerThread)
 	: Workers(InNumThreads)
 {
-	std::size_t jobsPerQueue = InNumThreads;
+	std::size_t jobsPerQueue = InJobsPerThread;
 	Workers.EmplaceBack(this, jobsPerQueue, Worker::Mode::Foreground);
 
 	for (std::size_t i = 1; i < InNumThreads; ++i)
@@ -21,7 +21,7 @@ Engine::Engine(std::size_t InNumThreads, std::size_t InJobsPerThread)
 
 Worker* Engine::GetRandomWorker()
 {
-	std::uniform_int_distribution<std::size_t> dist{ 0, Workers.CurrentSize() };
+	std::uniform_int_distribution<std::size_t> dist{ 0, Workers.CurrentSize()-1 };
 	std::default_random_engine randomEngine{ std::random_device()() };
 
 	Worker* worker = &Workers[dist(randomEngine)];

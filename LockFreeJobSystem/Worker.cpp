@@ -5,13 +5,31 @@
 Worker::Worker(Engine* engine, std::size_t InMaxJobs, Mode InMode /*= Mode::Background*/)
 	: WorkPool(InMaxJobs)
 	, queue(InMaxJobs)
+	, ThreadMode(InMode)
+	, JobEngine(engine)
 {
-
 }
 
 void Worker::Start()
 {
-
+	if (ThreadMode.load() == Mode::Foreground)
+	{
+		ThreadId = std::this_thread::get_id();
+	}
+	else
+	{
+		WorkerThread = std::thread([this] {
+			while (true)
+			{
+				Job* job = GetJob();
+				if (job)
+				{
+					job->Run();
+				}
+			}
+		});
+		ThreadId = WorkerThread.get_id();
+	}
 }
 
 void Worker::Stop()
@@ -21,7 +39,7 @@ void Worker::Stop()
 
 bool Worker::IsRunning() const
 {
-	return false;
+	return true;
 }
 
 Pool& Worker::GetPool()
@@ -62,7 +80,7 @@ Job* Worker::GetJob()
 	}
 	else
 	{
-		Worker* worker = engine->GetRandomWorker();
+		Worker* worker = JobEngine->GetRandomWorker();
 
 		if (worker != this)
 		{

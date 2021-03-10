@@ -36,7 +36,7 @@ public:
 
 private:
 	Pool WorkPool;
-	class Engine* engine;
+	class Engine* JobEngine;
 	JobQueue queue;
 	std::thread::id ThreadId;
 	std::thread WorkerThread;

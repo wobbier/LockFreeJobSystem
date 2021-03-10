@@ -1,6 +1,7 @@
 #include "JobQueue.h"
 
 JobQueue::JobQueue(std::size_t InMaxJobs)
+	: Jobs{InMaxJobs}
 {
 
 }
@@ -24,15 +25,15 @@ bool JobQueue::Push(Job* InJob)
 
 Job* JobQueue::Pop()
 {
-	int bottom = Bottom.load(std::memory_order_acquire);
+	int bottom = Bottom.load(std::memory_order_relaxed);
 	bottom = std::max(0, bottom - 1);
-	Bottom.store(bottom, std::memory_order_release);
+	Bottom.store(bottom, std::memory_order_seq_cst);
 
-	int top = Top.load(std::memory_order_acquire);
+	int top = Top.load(std::memory_order_seq_cst);
 
 	if (top <= bottom)
 	{
-		Job* job = Jobs[bottom];
+		Job* job = Jobs[bottom].load(std::memory_order_relaxed);
 		if (top != bottom)
 		{
 			return job;
@@ -42,27 +43,40 @@ Job* JobQueue::Pop()
 			int expectedTop = top;
 			int desiredTop = top + 1;
 
-			if (!Top.compare_exchange_weak(expectedTop, desiredTop, std::memory_order_acq_rel))
+			if (!Top.compare_exchange_strong(expectedTop, desiredTop, std::memory_order_relaxed))
 			{
 				// Job was stolen already
 				job = nullptr;
 			}
 
-			//Top?
-			Bottom.store(top + 1, std::memory_order_release);
+			Bottom.store(top + 1, std::memory_order_relaxed);
 			return job;
 		}
 	}
 	else
 	{
-		//Top?
-		Bottom.store(top, std::memory_order_release);
+		Bottom.store(top, std::memory_order_relaxed);
 		return nullptr;
 	}
 }
 
 Job* JobQueue::Steal()
 {
-	return nullptr;
-}
+	int top = Top.load(std::memory_order_relaxed);
+	int bottom = Bottom.load(std::memory_order_seq_cst);
+	if (top < bottom)
+	{
+		Job* job = Jobs[top].load(std::memory_order_relaxed);
 
+		if (Top.compare_exchange_weak(top, top + 1, std::memory_order_seq_cst) == false)
+		{
+			return nullptr;
+		}
+
+		return job;
+	}
+	else
+	{
+		return nullptr;
+	}
+}
