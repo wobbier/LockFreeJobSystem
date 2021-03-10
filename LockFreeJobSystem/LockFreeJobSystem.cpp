@@ -26,7 +26,11 @@ int main()
     for (std::size_t i = 0; i < kMaxTestJobs-1; ++i)
     {
         Job* child = worker->GetPool().CreateClosureJobAsChild([i](Job& job) {
-            std::cout << std::to_string(i) << std::endl;
+            for (int j = 0; j < i; ++j)
+            {
+
+            }
+            //std::cout << std::to_string(i) << std::endl;
 		}, root);
 		worker->Submit(child);
     }

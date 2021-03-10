@@ -16,7 +16,7 @@ public:
 	bool Empty() const;
 
 private:
-	std::vector<std::atomic<Job*>> Jobs;
+	std::vector<Job*> Jobs;
 	std::atomic<int> Top;
 	std::atomic<int> Bottom;
 };

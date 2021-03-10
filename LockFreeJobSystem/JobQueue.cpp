@@ -33,7 +33,7 @@ Job* JobQueue::Pop()
 
 	if (top <= bottom)
 	{
-		Job* job = Jobs[bottom].load(std::memory_order_relaxed);
+		Job* job = Jobs[bottom];
 		if (top != bottom)
 		{
 			return job;
@@ -66,7 +66,7 @@ Job* JobQueue::Steal()
 	int bottom = Bottom.load(std::memory_order_seq_cst);
 	if (top < bottom)
 	{
-		Job* job = Jobs[top].load(std::memory_order_relaxed);
+		Job* job = Jobs[top];
 
 		if (Top.compare_exchange_weak(top, top + 1, std::memory_order_seq_cst) == false)
 		{
